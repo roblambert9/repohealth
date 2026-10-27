@@ -15,11 +15,12 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from . import __version__
-from .report import render_markdown
+from .report import render_markdown, render_test_markdown
 from .resolver import ChainedResolver, InstalledMetadataResolver, PyPIResolver, StubResolver
 from .risk import Policy, assess
 from .sbom import build_cyclonedx
 from .scan import ScanError, scan_target
+from .testhealth import TestHealthError, detect_flaky, parse_junit_xml, run_to_history_entry
 
 app = FastAPI(title="repohealth", version=__version__)
 
@@ -40,9 +41,43 @@ class ScanResponse(BaseModel):
     warnings: list[str]
 
 
+class TestHealthRequest(BaseModel):
+    junit_xml: str
+
+
+class TestHealthResponse(BaseModel):
+    source: str
+    totals: dict[str, int]
+    duration: float
+    failures: list[dict]
+    flaky: list[dict]
+    report_markdown: str
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "version": __version__}
+
+
+@app.post("/test-health", response_model=TestHealthResponse)
+def test_health(request: TestHealthRequest) -> TestHealthResponse:
+    try:
+        run = parse_junit_xml(request.junit_xml, source="api-upload")
+    except TestHealthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    history = [run_to_history_entry(run)]
+    return TestHealthResponse(
+        source=run.source,
+        totals=run.totals,
+        duration=round(run.duration, 1),
+        failures=[
+            {"id": c.id, "outcome": c.outcome, "message": c.message}
+            for c in run.cases
+            if c.outcome in ("failed", "error")
+        ],
+        flaky=detect_flaky(history),
+        report_markdown=render_test_markdown(run, [], 1),
+    )
 
 
 @app.post("/scan", response_model=ScanResponse)

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from .resolver import ResolvedDependency
 from .risk import FAIL, PASS, REVIEW, Assessment
+from .testhealth import ERROR, FAILED, SKIPPED, TestRun
 
 DISCLAIMER = (
     "> Disclaimer: this report is an automated dependency inventory and "
@@ -66,4 +67,36 @@ def render_markdown(
         lines.append("")
     lines.append(DISCLAIMER)
     lines.append("")
+    return "\n".join(lines)
+
+
+def render_test_markdown(run: TestRun, flaky: list[dict], history_runs: int) -> str:
+    """Render a test-health report: totals, failures, then flaky cases."""
+    totals = run.totals
+    lines = [
+        f"# repohealth test report: {run.source}",
+        "",
+        f"Total: {totals['total']} — passed {totals['passed']}, "
+        f"failed {totals[FAILED]}, errors {totals[ERROR]}, "
+        f"skipped {totals[SKIPPED]} — {run.duration:.1f}s",
+        "",
+    ]
+    problems = [c for c in run.cases if c.outcome in (FAILED, ERROR)]
+    if problems:
+        lines.append("## Failures and errors")
+        lines.append("")
+        for case in problems:
+            lines.append(f"- **{case.outcome}** `{case.id}`")
+            if case.message:
+                lines.append(f"  - {case.message}")
+        lines.append("")
+    if history_runs > 1:
+        lines.append(f"## Flaky cases (across {history_runs} runs)")
+        lines.append("")
+        if flaky:
+            for entry in flaky:
+                lines.append(f"- `{entry['id']}` (seen in {entry['runs_seen']} runs)")
+        else:
+            lines.append("None — no case has both passing and failing runs.")
+        lines.append("")
     return "\n".join(lines)

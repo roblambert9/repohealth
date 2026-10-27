@@ -35,9 +35,16 @@ repohealth scan https://github.com/owner/repo --sbom sbom.json
 repohealth serve
 curl -X POST localhost:8000/scan -H 'Content-Type: application/json' \
   -d '{"target": "examples/demo-app", "stub_map": {"requests": "Apache-2.0"}}'
+
+# Test health: analyze a JUnit XML run, track flakiness across runs
+repohealth test-health examples/sample-junit.xml --report /tmp/test-report.md
+repohealth test-health run1.xml --history history.json
+repohealth test-health run2.xml --history history.json --report /tmp/test-report.md
 ```
 
-Exit codes: `0` PASS, `2` REVIEW, `3` FAIL, `1` scan or input error.
+Exit codes for scan: `0` PASS, `2` REVIEW, `3` FAIL, `1` scan or input error.
+Exit codes for test-health: `0` no failures or errors, `2` failures or
+errors present, `1` input error.
 
 ## Supported manifests
 
@@ -57,6 +64,7 @@ Exit codes: `0` PASS, `2` REVIEW, `3` FAIL, `1` scan or input error.
 | `repohealth/scan.py` | Discovery, dedup, GitHub cloning, shared scan flow |
 | `repohealth/sbom.py` | CycloneDX 1.5 document construction (standard-clean, no risk data) |
 | `repohealth/risk.py` | Policy + assessment (verdict aggregation) |
+| `repohealth/testhealth.py` | JUnit XML parsing, run totals, flaky detection, history |
 | `repohealth/report.py` | Markdown + JSON reporting |
 | `repohealth/cli.py` | CLI (`scan`, `serve`) |
 | `repohealth/api.py` | FastAPI service |
@@ -92,11 +100,13 @@ secondary-license notices or linking details the scanner cannot see
 outputs of the demo scan above (stub map, deny-strong-copyleft policy).
 The demo intentionally includes one GPL-3.0-only component, so the sample
 verdict is FAIL — that is the tool working, not a broken sample.
+`examples/sample-test-report.md` is repohealth analyzing its own test run
+(`examples/sample-junit.xml`): 31 passed, 0 failed, 0 flaky.
 
 ## Roadmap
 
-- **Test-health slice:** ingest pytest JUnit XML, track pass/fail, coverage,
-  and flaky tests over time.
+- **Test-health slice:** done in 0.2.0 — JUnit XML ingestion, per-run
+  totals, and cross-run flaky detection via a JSON history file.
 - **Uptime slice:** HTTP health checks with an incident log and automated
   status output.
 - npm license resolution via the npm registry (currently parsed, resolved

@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from importlib import metadata as importlib_metadata
 from typing import Protocol
 
+from . import __version__
 from .licenses import License, UnknownLicense, normalize
 from .parsers import Dependency
 
@@ -113,7 +114,7 @@ class PyPIResolver:
             path += f"/{dep.version}"
         url = f"https://pypi.org/pypi/{path}/json"
         try:
-            request = urllib.request.Request(url, headers={"User-Agent": "repohealth/0.1.0"})
+            request = urllib.request.Request(url, headers={"User-Agent": f"repohealth/{__version__}"})
             with urllib.request.urlopen(request, timeout=self.timeout_secs) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError) as exc:
