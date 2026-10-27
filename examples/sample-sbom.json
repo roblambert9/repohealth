@@ -1,0 +1,78 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:9207237d-26fe-4be0-a57b-c716eecd1722",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-10-27T14:26:59.105899+00:00",
+    "tools": [
+      {
+        "vendor": "Nano Empire AI",
+        "name": "repohealth",
+        "version": "0.1.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "examples/demo-app"
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "pypi:requests@2.31.0",
+      "type": "library",
+      "name": "requests",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/requests@2.31.0",
+      "version": "2.31.0"
+    },
+    {
+      "bom-ref": "pypi:flask@3.0.0",
+      "type": "library",
+      "name": "flask",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/flask@3.0.0",
+      "version": "3.0.0"
+    },
+    {
+      "bom-ref": "pypi:sqlalchemy@2.0.0",
+      "type": "library",
+      "name": "sqlalchemy",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/sqlalchemy@2.0.0",
+      "version": "2.0.0"
+    },
+    {
+      "bom-ref": "pypi:ansible-core@2.16.0",
+      "type": "library",
+      "name": "ansible-core",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-3.0-only"
+          }
+        }
+      ],
+      "purl": "pkg:pypi/ansible-core@2.16.0",
+      "version": "2.16.0"
+    }
+  ]
+}
