@@ -1,0 +1,10 @@
+[
+  {
+    "name": "demo-ok",
+    "url": "http://127.0.0.1:8901/ok"
+  },
+  {
+    "name": "demo-boom",
+    "url": "http://127.0.0.1:8901/boom"
+  }
+]

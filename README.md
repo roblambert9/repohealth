@@ -40,11 +40,17 @@ curl -X POST localhost:8000/scan -H 'Content-Type: application/json' \
 repohealth test-health examples/sample-junit.xml --report /tmp/test-report.md
 repohealth test-health run1.xml --history history.json
 repohealth test-health run2.xml --history history.json --report /tmp/test-report.md
+
+# Uptime: check targets, keep an incident log, report history
+repohealth uptime https://example.com --report /tmp/uptime.md
+repohealth uptime --config targets.json --log uptime.json --report /tmp/uptime.md
 ```
 
 Exit codes for scan: `0` PASS, `2` REVIEW, `3` FAIL, `1` scan or input error.
 Exit codes for test-health: `0` no failures or errors, `2` failures or
 errors present, `1` input error.
+Exit codes for uptime: `0` all targets up, `2` any target down,
+`1` input error.
 
 ## Supported manifests
 
@@ -65,6 +71,7 @@ errors present, `1` input error.
 | `repohealth/sbom.py` | CycloneDX 1.5 document construction (standard-clean, no risk data) |
 | `repohealth/risk.py` | Policy + assessment (verdict aggregation) |
 | `repohealth/testhealth.py` | JUnit XML parsing, run totals, flaky detection, history |
+| `repohealth/uptime.py` | HTTP checks, incident log, uptime summaries |
 | `repohealth/report.py` | Markdown + JSON reporting |
 | `repohealth/cli.py` | CLI (`scan`, `serve`) |
 | `repohealth/api.py` | FastAPI service |
@@ -102,13 +109,18 @@ The demo intentionally includes one GPL-3.0-only component, so the sample
 verdict is FAIL — that is the tool working, not a broken sample.
 `examples/sample-test-report.md` is repohealth analyzing its own test run
 (`examples/sample-junit.xml`): 31 passed, 0 failed, 0 flaky.
+`examples/sample-uptime-report.md` is a local demo run against a tiny
+server on port 8901 (`/ok` → 200, `/boom` → 500; targets in
+`examples/sample-uptime-targets.json`, history in
+`examples/sample-uptime-log.json`): 1 up, 1 down, with history percentages.
 
 ## Roadmap
 
-- **Test-health slice:** done in 0.2.0 — JUnit XML ingestion, per-run
-  totals, and cross-run flaky detection via a JSON history file.
-- **Uptime slice:** HTTP health checks with an incident log and automated
-  status output.
+All three launch slices are done: license/SBOM (0.1.0), test-health
+(0.2.0), uptime (0.3.0). Next candidates, in no order: npm license
+resolution via the npm registry (currently parsed, resolved as unknown
+unless a stub map names the license); coverage ingestion for the
+test-health slice; alerting (webhook/email) on uptime transitions.
 - npm license resolution via the npm registry (currently parsed, resolved
   as unknown unless a stub map names the license).
 

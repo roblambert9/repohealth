@@ -7,11 +7,15 @@ Usage::
                 [--stub-map stub.json]
     repohealth test-health <junit.xml> [--history history.json]
                 [--report report.md] [--summary-json summary.json]
+    repohealth uptime [URL ...] [--config targets.json] [--log uptime.json]
+                [--report report.md] [--summary-json summary.json]
     repohealth serve [--host 127.0.0.1] [--port 8000]
 
 Exit codes for scan: 0 = PASS, 2 = REVIEW, 3 = FAIL, 1 = scan or input error.
 Exit codes for test-health: 0 = no failures or errors, 2 = failures or
 errors present, 1 = input error.
+Exit codes for uptime: 0 = all targets up, 2 = any target down,
+1 = input error.
 ``--stub-map`` supplies a JSON name -> license map and replaces the live
 resolvers, which makes demo and test runs deterministic without network
 access. Without it, the resolver chain is installed metadata, then PyPI.
@@ -24,7 +28,7 @@ import json
 import sys
 from pathlib import Path
 
-from .report import render_markdown, render_test_markdown
+from .report import render_markdown, render_test_markdown, render_uptime_markdown
 from .resolver import ChainedResolver, InstalledMetadataResolver, PyPIResolver, StubResolver
 from .risk import FAIL, PASS, REVIEW, Policy, assess
 from .sbom import build_cyclonedx
@@ -36,6 +40,7 @@ from .testhealth import (
     parse_junit_xml,
     run_to_history_entry,
 )
+from .uptime import DOWN, append_log, load_targets, run_checks, summarize
 
 
 def _build_resolver(stub_map: dict[str, str] | None):
@@ -114,6 +119,44 @@ def _cmd_test_health(args: argparse.Namespace) -> int:
     return 2 if run.has_failures else 0
 
 
+def _cmd_uptime(args: argparse.Namespace) -> int:
+    targets: list[tuple[str, str]] = [(url, url) for url in args.urls]
+    if args.config:
+        try:
+            targets.extend(load_targets(args.config))
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"error: uptime config unusable: {exc}", file=sys.stderr)
+            return 1
+    if not targets:
+        print("error: no uptime targets: pass URLs or --config", file=sys.stderr)
+        return 1
+    results = run_checks(targets, timeout=args.timeout)
+    if args.log:
+        try:
+            log = append_log(args.log, results)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"error: uptime log unusable: {exc}", file=sys.stderr)
+            return 1
+        history = summarize(log)
+    else:
+        history = summarize([{"name": r.name, "url": r.url, "status": r.status,
+                              "checked_at": r.checked_at} for r in results])
+    markdown = render_uptime_markdown(results, history)
+    summary = {"results": [{"name": r.name, "url": r.url, "status": r.status,
+                            "http_status": r.http_status, "latency_ms": r.latency_ms,
+                            "error": r.error} for r in results],
+               "history": history}
+    if args.report:
+        Path(args.report).write_text(markdown, encoding="utf-8")
+    else:
+        print(markdown)
+    if args.summary_json:
+        Path(args.summary_json).write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    downs = sum(1 for r in results if r.status == DOWN)
+    print(f"uptime: {len(results) - downs}/{len(results)} up", file=sys.stderr)
+    return 2 if downs else 0
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
     # Imported lazily so the core scanner never requires FastAPI installed.
     import uvicorn
@@ -141,6 +184,14 @@ def build_parser() -> argparse.ArgumentParser:
     health.add_argument("--report", help="Write the Markdown report here (default: stdout)")
     health.add_argument("--summary-json", help="Write the JSON summary here")
     health.set_defaults(func=_cmd_test_health)
+    uptime = sub.add_parser("uptime", help="Check HTTP targets and log the results.")
+    uptime.add_argument("urls", nargs="*", help="URLs to check (name defaults to the URL)")
+    uptime.add_argument("--config", help="JSON targets file (list of URLs or {name, url} objects)")
+    uptime.add_argument("--log", help="JSON log file to append this run to (enables history)")
+    uptime.add_argument("--report", help="Write the Markdown report here (default: stdout)")
+    uptime.add_argument("--summary-json", help="Write the JSON summary here")
+    uptime.add_argument("--timeout", type=float, default=10.0, help="Per-target timeout in seconds")
+    uptime.set_defaults(func=_cmd_uptime)
     serve = sub.add_parser("serve", help="Run the HTTP API (local demo use; binds loopback by default).")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)

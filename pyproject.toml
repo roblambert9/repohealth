@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repohealth"
-version = "0.2.0"
+version = "0.3.0"
 description = "Repository health, license-compliance, and SBOM scanner: dependency inventory, SPDX license risk, and CycloneDX output."
 readme = "README.md"
 requires-python = ">=3.11"

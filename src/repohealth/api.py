@@ -15,12 +15,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from . import __version__
-from .report import render_markdown, render_test_markdown
+from .report import render_markdown, render_test_markdown, render_uptime_markdown
 from .resolver import ChainedResolver, InstalledMetadataResolver, PyPIResolver, StubResolver
 from .risk import Policy, assess
 from .sbom import build_cyclonedx
 from .scan import ScanError, scan_target
 from .testhealth import TestHealthError, detect_flaky, parse_junit_xml, run_to_history_entry
+from .uptime import DOWN, run_checks, summarize
 
 app = FastAPI(title="repohealth", version=__version__)
 
@@ -54,9 +55,40 @@ class TestHealthResponse(BaseModel):
     report_markdown: str
 
 
+class UptimeTarget(BaseModel):
+    name: str | None = None
+    url: str
+
+
+class UptimeRequest(BaseModel):
+    targets: list[UptimeTarget]
+    timeout: float = 10.0
+
+
+class UptimeResponse(BaseModel):
+    results: list[dict]
+    history: dict[str, dict]
+    report_markdown: str
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "version": __version__}
+
+
+@app.post("/uptime", response_model=UptimeResponse)
+def uptime(request: UptimeRequest) -> UptimeResponse:
+    targets = [(t.name or t.url, t.url) for t in request.targets]
+    results = run_checks(targets, timeout=request.timeout)
+    history = summarize([{"name": r.name, "url": r.url, "status": r.status,
+                          "checked_at": r.checked_at} for r in results])
+    return UptimeResponse(
+        results=[{"name": r.name, "url": r.url, "status": r.status,
+                  "http_status": r.http_status, "latency_ms": r.latency_ms,
+                  "error": r.error} for r in results],
+        history=history,
+        report_markdown=render_uptime_markdown(results, history),
+    )
 
 
 @app.post("/test-health", response_model=TestHealthResponse)

@@ -14,6 +14,7 @@ from __future__ import annotations
 from .resolver import ResolvedDependency
 from .risk import FAIL, PASS, REVIEW, Assessment
 from .testhealth import ERROR, FAILED, SKIPPED, TestRun
+from .uptime import DOWN, UP, CheckResult
 
 DISCLAIMER = (
     "> Disclaimer: this report is an automated dependency inventory and "
@@ -98,5 +99,38 @@ def render_test_markdown(run: TestRun, flaky: list[dict], history_runs: int) -> 
                 lines.append(f"- `{entry['id']}` (seen in {entry['runs_seen']} runs)")
         else:
             lines.append("None — no case has both passing and failing runs.")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def render_uptime_markdown(results: list[CheckResult], summary: dict[str, dict]) -> str:
+    """Render an uptime report: this run's checks, then history per target."""
+    ups = sum(1 for r in results if r.status == UP)
+    downs = sum(1 for r in results if r.status == DOWN)
+    lines = [
+        "# repohealth uptime report",
+        "",
+        f"This run: {ups} up, {downs} down.",
+        "",
+        "| Target | URL | Status | HTTP | Latency | Detail |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for result in results:
+        lines.append(
+            f"| {result.name} | {result.url} | {result.status} | "
+            f"{result.http_status if result.http_status is not None else '—'} | "
+            f"{result.latency_ms}ms | {result.error or '—'} |"
+        )
+    lines.append("")
+    if summary:
+        lines.append("## History")
+        lines.append("")
+        lines.append("| Target | Checks | Ups | Downs | Uptime | Last status |")
+        lines.append("| --- | --- | --- | --- | --- | --- |")
+        for name, bucket in sorted(summary.items()):
+            lines.append(
+                f"| {name} | {bucket['checks']} | {bucket['ups']} | {bucket['downs']} | "
+                f"{bucket['uptime_pct']}% | {bucket['last_status']} |"
+            )
         lines.append("")
     return "\n".join(lines)
