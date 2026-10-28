@@ -127,3 +127,10 @@ test-health slice; alerting (webhook/email) on uptime transitions.
 ## License
 
 MIT. See `LICENSE`.
+
+
+## Maintainer
+
+Built and maintained by Robert Lambert ([Nano Empire AI](https://www.nanoempireai.com)).
+Need a repository, license, or MCP-server audit run for you? See
+[nanoempireai.com/skillproof](https://www.nanoempireai.com/skillproof) or email rob@nanoempireai.com.
