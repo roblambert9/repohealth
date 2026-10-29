@@ -134,3 +134,12 @@ MIT. See `LICENSE`.
 Built and maintained by Robert Lambert ([Nano Empire AI](https://www.nanoempireai.com)).
 Need a repository, license, or MCP-server audit run for you? See
 [nanoempireai.com/skillproof](https://www.nanoempireai.com/skillproof) or email rob@nanoempireai.com.
+
+## Commercial Products
+
+| Product | Description | Link |
+|---------|-------------|------|
+| **BidShield** | Federal procurement compliance triage — $99/$299 | [nanoempireai.com/bidshield](https://www.nanoempireai.com/bidshield) |
+| **RecallRadar** | Consumer safety recall compliance — $30/$99/mo | [nanoempireai.com/recall-report](https://www.nanoempireai.com/recall-report) |
+| **SkillProof** | Adversarial MCP/agent audits — $500 sprint | [nanoempireai.com/skillproof](https://www.nanoempireai.com/skillproof) |
+| **BNOA** | Blinded Network Operation Attestation | [nanoempireai.com/bidshield/capsule](https://www.nanoempireai.com/bidshield/capsule) |
